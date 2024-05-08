@@ -1,7 +1,7 @@
 # Download notebook
 You can do:
 
-1. Open the jupyter notebook you want to run.
+1. Open the jupyter notebook you want to run: https://github.com/restrepo/plan_de_trabajo/blob/main/ptd.ipynb
 
 2. Click on: `Raw`
 <br>
