@@ -405,6 +405,9 @@ class PTD:
             if self.i_page == 1:
                 self.n_page = len(tables) # The same for all pages. Fix the Default value
         except:
+            print('Try to jump to next page...')
+            print(f'wait 2 seconds... {p}')
+            sleep(2)
             if not ALL.find_elements(By.TAG_NAME, "li")[0].get_attribute('innerHTML').find("pagination-next ng-scope disabled") > -1:
                 self.i_page += 1
                 i_docente = 0
