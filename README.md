@@ -5,7 +5,7 @@ You can do:
 
 2. Click on: `Raw`
 <br>
-[![enter image description here][1]][1]
+[![enter image description here][https://i.stack.imgur.com/M8jnR.png]][https://i.stack.imgur.com/M8jnR.png]
 
 3. Save <kbd>Ctrl</kbd>+<kbd>S</kbd>
 
