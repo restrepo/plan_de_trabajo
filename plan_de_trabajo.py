@@ -87,7 +87,7 @@ def loop(i,lptd,ptd,
          ENVIAR = False,
          file = 'kk.json'):
 #if True:
-    print(f'input i {i}')
+    print(f'input i {i}'.ljust(80),end='\r')
     while True:
     #if True:    
         ptd.DEVOLVER = []
@@ -96,16 +96,16 @@ def loop(i,lptd,ptd,
         
         i = ptd.get_docente(i_docente=i,L=lptd) #CONTINUE(i_docente) inside
         if ptd.CONTINUE:
-            print(f'CONTINUE {i}')
+            print(f'CONTINUE {i}'.ljust(80),end='\r')
             continue
 
-        print('wait 3 seconds...')
+        print('wait 3 seconds...'.ljust(80),end='\r')
         sleep(3)
     
         for iii in range(10):
             ptd.get_horas_reportadas()
             if ptd.h_total == '0':
-                print('wait 120 seconds...')
+                print('wait 120 seconds...'.ljust(80),end='\r')
                 sleep(120)
             sleep(3)
             if ptd.resumen_horas:
@@ -115,7 +115,7 @@ def loop(i,lptd,ptd,
             hell.click('CONTINUAR')
 
         if ptd.resumen_horas:
-            print(f'inside tables...')
+            print(f'inside tables...'.ljust(80),end='\r')
             #Addtional check here
             ptd.get_docencia()
 
@@ -177,7 +177,7 @@ def loop(i,lptd,ptd,
             lptd = ptd.add_to_list(lptd)
             #lptd.append( deepcopy(ptd.to_dict()) )
         
-        print(f'aprobados: {len(lptd)}')
+        print(f'aprobados: {len(lptd)}'.ljust(80),end='\r')
     
         # TODO → Move to self.method(lptd)
         if SAVE_DATABASE:
@@ -185,7 +185,7 @@ def loop(i,lptd,ptd,
             json.dump(lptd,f)
             f.close()
             
-        print('Next docente...')
+        print('Next docente...'.ljust(80),end='\r')
         #raise Exception('C')
         i = CONTINUE(i)
     return i, lptd, ptd
@@ -212,7 +212,7 @@ def get_compromisos(entregables,df):
 
 def CONTINUE(i):
     #hell.get_driver().back()
-    print('wait 2 seconds...')
+    print('wait 2 seconds...'.ljust(80),end='\r')
     sleep(2)
     hell.wait_until( hell.Text("Volver").exists,timeout_secs=120 )
     hell.click("Volver")
@@ -280,7 +280,7 @@ def login():
     hell.write(contraseña,into='*Contraseña')
     
     hell.click("I'm not a robot")
-    print('wait fo 2 seconds')
+    print('wait fo 2 seconds'.ljust(80),end='\r')
     sleep(2)
     try:
         # https://gist.github.com/Ramhm/9cc4976c05bee176871c46d28710aebe
@@ -333,16 +333,16 @@ class PTD:
         self.SINGLE = SINGLE
         hell.click('Gestionar planes')
 
-        print('wait 10 seconds...') #slew page some times
+        print('wait 10 seconds...'.ljust(80),end='\r') #slew page some times
         sleep(10)
         
         
         hell.wait_until( hell.Text("Búsqueda avanzada").exists,timeout_secs=self.timeout )
         
-        print('wait 5 seconds...')
+        print('wait 5 seconds...'.ljust(80),end='\r')
         sleep(5)
         hell.click('Búsqueda avanzada')
-        print('wait 2 seconds...')
+        print('wait 2 seconds...'.ljust(80),end='\r')
         sleep(2)
 
         hell.wait_until( hell.TextField("Facultad Ciencias Exactas y Naturales").exists,timeout_secs=self.timeout )
@@ -378,40 +378,34 @@ class PTD:
         
         hell.click('Buscar')
 
-        #TODO: Get total records from page
-        try:
-            #hell.wait_until(hell.Text('xxx').exists,timeout_secs = self.timeout)
-            self.n_total = 72
-        except:
-            self.n_notal = 1000
 
     def go_to_initial_page(self):
         if self.i_page > 1:
             for p in range(2,self.i_page+1):
                 hell.click("Siguiente")
-                print(f'wait 2 seconds... {p}')
+                print(f'wait 2 seconds... {p}'.ljust(80),end='\r')
                 sleep(2)
                 hell.wait_until( hell.Text('Fecha inicio semestre').exists,timeout_secs=240 )
         
     def get_docente(self,i_docente=0,L=[]):
         print(f'page: {self.i_page}; i: {i_docente} ')
+        ALL = hell.get_driver()
         try:
             #**************  GET docente info → TODO: move to a function *******
             hell.wait_until( hell.Text('Fecha inicio semestre').exists,timeout_secs=240 )
-            ALL = hell.get_driver()
             tables = ALL.find_elements(By.CLASS_NAME, 'table-responsive')
             x = tables[i_docente] # Si no hay más docentes en página ésta linea genera Error
             #******************************************************************
             if self.i_page == 1:
                 self.n_page = len(tables) # The same for all pages. Fix the Default value
         except:
-            print('Try to jump to next page...')
-            print(f'wait 2 seconds... {p}')
+            print('Try to jump to next page...'.ljust(80),end='\r')
+            print(f'Wait 2 seconds...'.ljust(80),end='\r')
             sleep(2)
             if not ALL.find_elements(By.TAG_NAME, "li")[0].get_attribute('innerHTML').find("pagination-next ng-scope disabled") > -1:
                 self.i_page += 1
                 i_docente = 0
-                print(f"page: {self.i_page}")
+                print(f"page: {self.i_page}".ljust(80),end='\r')
                 hell.click("Siguiente")
                 #**************  GET docente info → TODO: move to a function *******
                 hell.wait_until( hell.Text('Fecha inicio semestre').exists,timeout_secs=240 )
@@ -424,7 +418,13 @@ class PTD:
             
         
         self.diligenciado = pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
-        print(f'Docente: {self.diligenciado.Docente.iloc[0]}')
+        
+        try:
+            name_print = self.diligenciado.Docente.iloc[0].split()[-1]
+        except:
+            name_print = ''
+            
+        print(f'Docente: {name_print}')
         self.CONTINUE = False
         if self.diligenciado.Docente.iloc[0].split(' - ')[0] in [
             d['información_general']['identificación'] for d in L]:
@@ -434,7 +434,7 @@ class PTD:
             return i_docente
     
         # Va al primer docente
-        print('wait 5 seconds...')
+        print('wait 5 seconds...'.ljust(80),end='\r')
         sleep(5)
     
         if self.SINGLE:
@@ -452,7 +452,7 @@ class PTD:
         docentes[i_docente].click()
 
         # TODO: Change for a hell.wait_until with time
-        print('wait 1+10 seconds...')
+        print('wait 1+10 seconds...'.ljust(80),end='\r')
         sleep(1)
 
         try:
@@ -468,13 +468,13 @@ class PTD:
         return i_docente
 
     def get_horas_reportadas(self):
-        print('wait 2 seconds...')
+        print('wait 2 seconds...'.ljust(80),end='\r')
         sleep(2)
         
         hell.click('Información general')
         hell.wait_until( hell.Text('Topes de horas a diligenciar').exists,timeout_secs=self.timeout )
         
-        print('wait 5 seconds...')
+        print('wait 5 seconds...'.ljust(80),end='\r')
         sleep(5)
 
         ptdh = hell.get_driver()
@@ -488,7 +488,7 @@ class PTD:
             horas_acompletar = x[-2]
         else:
             horas_acompletar = '0'
-        print("h_total != horas_acompletar",self.h_total,horas_acompletar)
+        print(f"h_total == horas_acompletar?: {self.h_total},{horas_acompletar}".ljust(80),end='\r')
         # TODO: add to table to analyze with append_DEVOLVER()
         #if h_total != '0' and h_total != horas_acompletar:
         #    self.DEVOLVER.append(f'Horas reportadas: {h_acompletar}')
@@ -511,7 +511,7 @@ class PTD:
             self.resumen_horas = dict( zip(self.resumen_horas.keys(),
                   [int(x) for x in self.resumen_horas.values()] ) )                
 
-        print('wait 2 seconds...')
+        print('wait 2 seconds...'.ljust(80),end='\r')
         sleep(2)
         
 
@@ -520,7 +520,7 @@ class PTD:
         
         hell.wait_until(hell.Text('Actividades de docencia').exists, timeout_secs=self.timeout)
         
-        print('wait 2 seconds...')
+        print('wait 2 seconds...'.ljust(80),end='\r')
         sleep(2)
         
         docencia = hell.get_driver()
@@ -549,7 +549,7 @@ class PTD:
         
         hell.wait_until(hell.Text('Actividades de investigación').exists, timeout_secs=self.timeout)
         
-        print('wait 2 seconds...')
+        print('wait 2 seconds...'.ljust(80),end='\r')
         sleep(2)
 
         investigación = hell.get_driver()
@@ -573,7 +573,7 @@ class PTD:
         
         hell.wait_until( hell.Text('Actividades de extensión').exists, timeout_secs=self.timeout )
         
-        print('wait 2 seconds...')
+        print('wait 2 seconds...'.ljust(80),end='\r')
         sleep(2)
         
         
@@ -594,7 +594,7 @@ class PTD:
         
         hell.wait_until( hell.Text('Actividades de administración').exists, timeout_secs=self.timeout )
         
-        print('wait 2 seconds...')
+        print('wait 2 seconds...'.ljust(80),end='\r')
         sleep(2)
         
         
@@ -610,7 +610,7 @@ class PTD:
         
         hell.wait_until( hell.Text('Otras Actividades').exists, timeout_secs=self.timeout )
         
-        print('wait 2 seconds...')
+        print('wait 2 seconds...'.ljust(80),end='\r')
         sleep(2)
         
         
