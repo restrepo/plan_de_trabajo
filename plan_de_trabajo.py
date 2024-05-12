@@ -32,8 +32,9 @@ def drop(description,options):
     return widgets.Dropdown(
         options=options,
         value=value,
-        description=description,
+        description=description, 
         disabled=False,
+        style = {'description_width': 'initial'}        
     )
 
 def get_config(defaults=[]):
@@ -82,113 +83,6 @@ def get_config(defaults=[]):
 
 
 
-def loop(i,lptd,ptd,
-         SAVE_DATABASE = False,
-         ENVIAR = False,
-         file = 'kk.json'):
-#if True:
-    print(f'input i {i}'.ljust(80),end='\r')
-    while True:
-    #if True:    
-        ptd.DEVOLVER = []
-        ptd.WARNINGS = []
-        ptd.NEXT_STEP = True
-        
-        i = ptd.get_docente(i_docente=i,L=lptd) #CONTINUE(i_docente) inside
-        if ptd.CONTINUE:
-            print(f'CONTINUE {i}'.ljust(80),end='\r')
-            continue
-
-        print('wait 3 seconds...'.ljust(80),end='\r')
-        sleep(3)
-    
-        for iii in range(10):
-            ptd.get_horas_reportadas()
-            if ptd.h_total == '0':
-                print('wait 120 seconds...'.ljust(80),end='\r')
-                sleep(120)
-            sleep(3)
-            if ptd.resumen_horas:
-                break
-
-        if hell.Text('CONTINUAR').exists():
-            hell.click('CONTINUAR')
-
-        if ptd.resumen_horas:
-            print(f'inside tables...'.ljust(80),end='\r')
-            #Addtional check here
-            ptd.get_docencia()
-
-            if hell.Text('CONTINUAR').exists():
-                hell.click('CONTINUAR')
-            
-            
-            ptd.get_investigación()
-
-            if hell.Text('CONTINUAR').exists():
-                hell.click('CONTINUAR')
-            
-            ptd.get_extension()
-
-            if hell.Text('CONTINUAR').exists():
-                hell.click('CONTINUAR')            
-            
-            ptd.get_admininstración()
-
-            if hell.Text('CONTINUAR').exists():
-                hell.click('CONTINUAR')
-            
-            ptd.get_otras()
-
-            if hell.Text('CONTINUAR').exists():
-                hell.click('CONTINUAR')
-                    
-        else:
-            i = CONTINUE(i)
-    
-        DEVOLVER = ptd.append_DEVOLVER() # Data scheme used here!
-    
-        # TODO → Move to self.method(lptd)
-        msg_autorizar = ptd.get_mensaje_autorizar() #Required by ptd.to_dict()
-        if ENVIAR and ptd.DEVOLVER:
-            msg = '\n'.join(ptd.DEVOLVER)
-            hell.click('Devolver')
-            hell.write(msg, into = 'MOTIVO')
-            hell.click('Aceptar')
-            hell.wait_until( hell.Text('El plan ha sido actualizado exitosámente y ha quedado en estado Devuelto para revisión.').exists,timeout_secs=ptd.timeout )
-            sleep(3)
-            hell.click('Aceptar')
-            print('Devuelto\n','\n'.join(ptd.DEVOLVER))
-            i = CONTINUE(i)
-    
-        # TODO → Move to self.method(lptd)
-        elif ENVIAR:
-            hell.click('Autorizar')
-            hell.write(msg_autorizar, into = 'Observaciones')
-            hell.click('Aceptar')
-            hell.wait_until( hell.Text('El plan ha sido actualizado exitosámente y ha quedado en estado Autorizado.').exists,timeout_secs=120 )
-            sleep(3)
-            hell.click('Aceptar')
-            print('Autorizar\n',msg_autorizar)
-            #input('Desapareció pup up? (Hit <Enter>)')
-            lptd = ptd.add_to_list(lptd)
-            #lptd.append( deepcopy(ptd.to_dict()) )
-        else:            
-            lptd = ptd.add_to_list(lptd)
-            #lptd.append( deepcopy(ptd.to_dict()) )
-        
-        print(f'aprobados: {len(lptd)}'.ljust(80),end='\r')
-    
-        # TODO → Move to self.method(lptd)
-        if SAVE_DATABASE:
-            f=open(file,'w')
-            json.dump(lptd,f)
-            f.close()
-            
-        print('Next docente...'.ljust(80),end='\r')
-        #raise Exception('C')
-        i = CONTINUE(i)
-    return i, lptd, ptd
 
 def find_element(x,by,value):
     try:
@@ -286,9 +180,30 @@ def login():
         # https://gist.github.com/Ramhm/9cc4976c05bee176871c46d28710aebe
         kk = hell.get_driver().find_element(By.XPATH,'//span[@aria-checked="true"]')
     except:
-        input('Captcha solved? (Hit <Enter>')
+        input('Captcha solved? (Hit <Enter>)')
     sleep(1)
     hell.click('Conectar')
+
+def configuration(radios,drops):
+    '''
+    Settings data scheme
+    '''
+    # From Jupyter
+    settings = {}
+    settings['Salvar la base de datos'               ] = radios['Salvar la base de datos'               ].get_interact_value()
+    settings['Actualizar la base de datos'           ] = radios['Actualizar la base de datos'           ].get_interact_value()
+    settings['Enviar el plan de trabajo al profesor' ] = radios['Enviar el plan de trabajo al profesor' ].get_interact_value()
+    settings['Autenticarse de nuevo'                 ] = radios['Autenticarse de nuevo'                 ].get_interact_value()
+    settings['RESET i: ignorando la base de datos'   ] = radios['RESET i: ignorando la base de datos'   ].get_interact_value()
+    settings['Estado del plan de trabajo'            ] =  drops['Estado del plan de trabajo'            ].get_interact_value()
+    settings['Semestre'                              ] =  drops['Semestre'                              ].get_interact_value()
+
+    TODOS = False
+    if drops['Grupo de profesores'].get_interact_value() == 'Todos':
+        settings['Grupo de profesores'] = True
+
+    # From other 
+    return settings
     
 #hell is global
 class PTD:
@@ -306,26 +221,62 @@ class PTD:
     timeout = 180 #secs
     SINGLE = False
     compromisos = []
-    estado = "Diligenciado"
-    todos = False
+    #estado = "Diligenciado"
+    #todos = False
     this_semestre = get_semester()
-    semestre = "2024-1"    
+    #semestre = "2024-1"    
     n_page = 20
     n_total = 10000
-    def __init__(self,url="https://ayudame2.udea.edu.co/php_app/?app=inicio&appid=PLANDOCEN",i_page=1,go_to_url=True): #with previous commands
-        self.i_page = i_page
-        self.DEVOLVER = []
-        self.WARNINGS = []
-        self.NEXT_STEP = True
-
-        if go_to_url:
-            hell.go_to(url)
+    DEVOLVER = []
+    WARNINGS = []
+    NEXT_STEP = True
+    BREAK = False
     
-            hell.wait_until( hell.Text('Gestionar planes').exists, timeout_secs=self.timeout)
-            
-            if not hell.Text('Gestionar planes').exists():
-                self.NEXT_STEP = False
+    def __init__(self,settings={}): #with previous commands
+        self.SAVE_DATABASE = settings.get('Salvar la base de datos')
+        self.UPDATE_DATABASE = settings.get('Actualizar la base de datos')
+        self.ENVIAR = settings.get('Enviar el plan de trabajo al profesor')
+        self.TODOS = settings.get('Grupo de profesores')
+        self.NEW_LOGIN = settings.get('Autenticarse de nuevo')
+        self.RESET_i = settings.get('RESET i: ignorando la base de datos')
+        self.ESTADO = settings.get('Estado del plan de trabajo')
+        self.SEMESTRE = settings.get('Semestre')
+        
+    def initialize_database(self,file):
+        if not file:
+            file = input('Nombre para el archivo de salida en json. e.g:\nptd_fcen_20222.json\n')
+        
+        lptd = []
+        if self.UPDATE_DATABASE:
+            try:
+                f=open(file,'r')
+                lptd = json.load(f)
+                f.close()
+            except:
+                pass
+                
+        print(f'{len(lptd)} records in database' )
+        
+        if self.RESET_i:
+            self.i_page = 1
+        else:    
+            self.i_page = int(len(lptd)/self.n_page)+1
+        
+        
+        #TODO: Calculate i_page fron len(lptd))
+        print(f'Incialización para {file} con len: {len(lptd)} e i_page = {self.i_page}')
 
+        return lptd
+
+    def go_to_PTD(self,url="https://ayudame2.udea.edu.co/php_app/?app=inicio&appid=PLANDOCEN"):
+        self.url = url
+        hell.go_to(url)
+    
+        hell.wait_until( hell.Text('Gestionar planes').exists, timeout_secs=self.timeout)
+            
+        if not hell.Text('Gestionar planes').exists():
+            self.NEXT_STEP = False
+        
     def gestionar_planes(self,institutos = ['BIOLOGIA','FISICA','MATEMATICA','QUIMICA', 'CIENCIAS DEL MAR'],SINGLE = False, cedula = None):
         """
         Make the search
@@ -360,25 +311,35 @@ class PTD:
         
         sleep(1)
 
-        if not self.semestre:
-            self.semestre = self.this_semestre
+        if not self.SEMESTRE:
+            self.SEMESTRE = self.this_semestre
             
-        if self.this_semestre != self.semestre:
-            hell.select(self.this_semestre,self.semestre)
+        if self.this_semestre != self.SEMESTRE:
+            hell.select(self.this_semestre,self.SEMESTRE)
         
         hell.click( hell.RadioButton("Planes diligenciados") )
         
-        if not self.todos:
+        if not self.TODOS:
             hell.select("Todos",instituto)
         
-        hell.select("Todas",self.estado)
+        hell.select("Todas",self.ESTADO)
         
         if self.SINGLE:
             hell.write('313558','Identificación del docente') 
         
         hell.click('Buscar')
 
+    def búsqueda_avanzada(self,institutos = ['BIOLOGIA','FISICA','MATEMATICA','QUIMICA', 'CIENCIAS DEL MAR'],
+                          SINGLE = False, cedula = None):
+        
+        self.go_to_PTD()
+        
+        if self.NEXT_STEP:
+            self.gestionar_planes(institutos = institutos, SINGLE = SINGLE, cedula = cedula)
+        else:
+            raise Exception('Búsqueda fallida')    
 
+    
     def go_to_initial_page(self):
         if self.i_page > 1:
             for p in range(2,self.i_page+1):
@@ -407,6 +368,15 @@ class PTD:
                 i_docente = 0
                 print(f"page: {self.i_page}".ljust(80),end='\r')
                 hell.click("Siguiente")
+                print(f'Wait 2 seconds...'.ljust(80),end='\r')
+                sleep(2)
+                # Be sure the you are in new page
+                hell.wait_until( hell.Text('Primero', to_left_of='Anterior').exists, timeout_secs=self.timeout)
+                if hell.Text(str(self.i_page-1),to_right_of='Primero').exists():
+                    hell.wait_until( hell.Text(str(self.i_page),to_right_of=str(self.i_page-1)).exists, timeout_secs=self.timeout)
+                else:
+                    hell.wait_until( hell.Text(str(self.i_page),to_left_of =str(self.i_page+1)).exists, timeout_secs=self.timeout)                
+                # DEBUG: raise Exception('check change of page')
                 #**************  GET docente info → TODO: move to a function *******
                 hell.wait_until( hell.Text('Fecha inicio semestre').exists,timeout_secs=240 )
                 ALL = hell.get_driver()
@@ -647,6 +617,7 @@ class PTD:
         ptdi['WARNINGS'] = self.WARNINGS
         ptdi['compromisos'] = self.compromisos
         ptdi['DEVOLVER'] = self.DEVOLVER
+        ptdi['estado'] = self.ESTADO
         return ptdi
 
     def get_actividades(self,L=[]):
@@ -747,7 +718,9 @@ class PTD:
 
         atención = self.Actividades_relacionadas_con_la_docencia[self.Actividades_relacionadas_con_la_docencia['Actividad'] == 'Atención a estudiantes']
         if atención.empty:
-            self.DEVOLVER.append('Actividades relacionadas con la docencia: Es oblogatorio incluir horas en "Atención a estudiantes"')        
+            self.DEVOLVER.append('Actividades relacionadas con la docencia: Es oblogatorio incluir horas en "Atención a estudiantes"')
+
+        #Check if id is in `devolver_semester.json`
             
         if self.DEVOLVER:
             DEVOLVER = True
@@ -773,7 +746,212 @@ class PTD:
                                 20: (19,1),21: (0,2),30: (9,2),
                                 40: (19,2),41: (0,3)}
         i_total = self.n_total -1
-        i_page_max = int(i_total/self.n_page) + 1
-        i_max = i_total - (i_page_max - 1)*self.n_page
+        self.i_page_max = int(i_total/self.n_page) + 1
+        self.i_max = i_total - (self.i_page_max - 1)*self.n_page
         # assert self.get_max_indices(41) == self.check_max_index[41]
-        return i_max, i_page_max        
+        #return self.i_max, self.i_page_max
+
+
+    def initialize_loop(self, lptd):
+        #TODO: i self.i
+        if self.RESET_i:
+            i=0
+        else:
+            i = len(lptd)-(self.i_page-1)*self.n_page # For new data append to old database
+        
+        
+        self.go_to_initial_page() #TODO: Define self.i_page here from guess_page
+        
+        
+        # Obtain registros totales (Default: self.n_total = 1000)
+        try:
+            self.n_total = eval( hell.get_driver().find_element(
+                By.CLASS_NAME , 'col-md-2').text.split('\n')[0] )
+        except:
+            pass
+        
+        self.get_max_indices() # → self.i_max, self.i_page_max
+        print('')
+        print(f'{self.n_total} registros: en {self.i_page_max} páginas; e índice máximo {self.i_max}')
+
+        return i, lptd
+
+    def hola(self):
+        pass
+    
+    def loop(self,i,lptd,
+             file = 'kk.json'):
+    #if True:
+        print(f'input i {i}'.ljust(80),end='\r')
+        
+        while True:
+        #if True:
+            #if i == self.i_max and self.i_page == self.i_page_max:
+            #    input('In last element ... ')
+
+            if i == self.i_max+1 and self.i_page == self.i_page_max:
+                self.BREAK = True
+                print('All records analysed: forcing break ..., bye!')
+                raise  Exception('The end')
+            
+            self.DEVOLVER = []
+            self.WARNINGS = []
+            self.NEXT_STEP = True
+            
+            i = self.get_docente(i_docente=i,L=lptd) #CONTINUE(i_docente) inside
+            if self.CONTINUE:
+                print(f'CONTINUE {i}'.ljust(80),end='\r')
+                continue
+    
+            print('wait 3 seconds...'.ljust(80),end='\r')
+            sleep(3)
+        
+            for iii in range(10):
+                self.get_horas_reportadas()
+                if self.h_total == '0':
+                    print('wait 120 seconds...'.ljust(80),end='\r')
+                    sleep(120)
+                sleep(3)
+                if self.resumen_horas:
+                    break
+    
+            if hell.Text('CONTINUAR').exists():
+                hell.click('CONTINUAR')
+    
+            if self.resumen_horas:
+                print(f'inside tables...'.ljust(80),end='\r')
+                #Addtional check here
+                self.get_docencia()
+    
+                if hell.Text('CONTINUAR').exists():
+                    hell.click('CONTINUAR')
+                
+                
+                self.get_investigación()
+    
+                if hell.Text('CONTINUAR').exists():
+                    hell.click('CONTINUAR')
+                
+                self.get_extension()
+    
+                if hell.Text('CONTINUAR').exists():
+                    hell.click('CONTINUAR')            
+                
+                self.get_admininstración()
+    
+                if hell.Text('CONTINUAR').exists():
+                    hell.click('CONTINUAR')
+                
+                self.get_otras()
+    
+                if hell.Text('CONTINUAR').exists():
+                    hell.click('CONTINUAR')
+                        
+            else:
+                i = CONTINUE(i)
+        
+            DEVOLVER = self.append_DEVOLVER() # Data scheme used here!
+        
+            # TODO → Move to self.method(lptd)
+            msg_autorizar = self.get_mensaje_autorizar() #Required by self.to_dict()
+            if self.ENVIAR and self.DEVOLVER:
+                msg = '\n'.join(self.DEVOLVER)
+                hell.click('Devolver')
+                hell.write(msg, into = 'MOTIVO')
+                hell.click('Aceptar')
+                hell.wait_until( hell.Text('El plan ha sido actualizado exitosámente y ha quedado en estado Devuelto para revisión.').exists,timeout_secs=self.timeout )
+                sleep(3)
+                hell.click('Aceptar')
+                print('Devuelto\n','\n'.join(self.DEVOLVER))
+                i = CONTINUE(i)
+        
+            # TODO → Move to self.method(lptd)
+            elif self.ENVIAR:
+                hell.click('Autorizar')
+                hell.write(msg_autorizar, into = 'Observaciones')
+                hell.click('Aceptar')
+                hell.wait_until( hell.Text('El plan ha sido actualizado exitosámente y ha quedado en estado Autorizado.').exists,timeout_secs=120 )
+                sleep(3)
+                hell.click('Aceptar')
+                print('Autorizar\n',msg_autorizar)
+                #input('Desapareció pup up? (Hit <Enter>)')
+                self.ESTADO = 'Autorizado'
+                lptd = self.add_to_list(lptd)
+                #lself.append( deepcopy(self.to_dict()) )
+            else:            
+                lptd = self.add_to_list(lptd)
+                #lself.append( deepcopy(self.to_dict()) )
+            
+            print(f'aprobados: {len(lptd)}'.ljust(80),end='\r')
+        
+            # TODO → Move to self.method(lptd)
+            if self.SAVE_DATABASE:
+                f=open(file,'w')
+                json.dump(lptd,f)
+                f.close()
+    
+            if i == self.i_max and self.i_page == self.i_page_max:
+                print('*'*40)
+                print('¡Todos los registros han sido procesados!\nUn ERROR se generá para escapar del loop')
+                print('*'*40)                
+                raise Exception('The End')        
+            
+            print('Next docente...'.ljust(80),end='\r')
+            #raise Exception('C')
+            
+            i = CONTINUE(i)
+            
+        return i, lptd
+
+    def force_loops(self, i,lptd, file):
+        ptd = self
+        jmax = 5
+        for j in range(5):
+            if self.BREAK:
+                print('The End')
+                break
+            print(f'recovering loop try {j}/{jmax}')
+            try:
+                #input('Check recovering loop')
+                print('check CONTINUAR')
+                if hell.Text('CONTINUAR').exists():
+                    print('close CONTINUAR popup')
+                    hell.click('CONTINUAR')
+                sleep(2)
+                print('check Aceptar')
+                if hell.Text('Aceptar').exists():
+                    print('close Aceptar popup')
+                    hell.click('Aceptar')
+                sleep(2)
+                print('check volver')
+                if hell.Text('Volver').exists():
+                    print('Return back to records list')
+                    hell.click('Volver')
+                
+                print('try loop')
+                i,lptd = ptd.loop(i,lptd, file) #When fails to to except
+                print('end try loop')
+
+            except:
+                print('except')
+                #if hell.Text('Fecha inicio periodo').exists():
+                sleep(2)
+                if hell.Text('CONTINUAR').exists():
+                    print('close CONTINUAR popup')
+                    hell.click('CONTINUAR')
+                sleep(2)                    
+                if hell.Text('Aceptar').exists():
+                    print('close Aceptar popup')
+                    hell.click('Aceptar')
+                sleep(2)
+                if hell.Text('Volver').exists():
+                    print('Return back to records list')
+                    hell.click('Volver')
+                print('Returning back to list') # hell.Text("Gestión de planes de trabajo").exists() → True
+                hell.wait_until(hell.Text("Gestión de planes de trabajo").exists,timeout_secs=ptd.timeout) 
+                i = 0
+                #raise Exception('Check logout')
+                if hell.get_driver().current_url != self.url:
+                    print('`Kernel` → `Restart Kernel` and `Run` → `Run All Cells` again')
+                    break
+        return i,lptd
