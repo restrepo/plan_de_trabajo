@@ -387,7 +387,8 @@ class PTD:
                 raise Exception("Saliendo: Todos los docentes encontrados")            
             
         
-        self.diligenciado = pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+        self.diligenciado = (pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+                             ).fillna('')
         
         try:
             name_print = self.diligenciado.Docente.iloc[0].split()[-1]
@@ -498,7 +499,8 @@ class PTD:
         tables = docencia.find_elements(By.CLASS_NAME, 'table-responsive')
         x = tables[0]
         
-        self.Actividades_de_docencia = pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+        self.Actividades_de_docencia = (pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+                                        ).fillna('')
         #Actividades_de_docencia
         
         presencial = 5
@@ -507,7 +509,8 @@ class PTD:
             
         x = tables[1]
         
-        self.Actividades_relacionadas_con_la_docencia = pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+        self.Actividades_relacionadas_con_la_docencia = (pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+                                                        ).fillna('')
         
         #self.Actividades_relacionadas_con_la_docencia = fix_column(tables[0],self.Actividades_relacionadas_con_la_docencia,'Actividad')
         self.Actividades_relacionadas_con_la_docencia = fix_column(x,self.Actividades_relacionadas_con_la_docencia,'Descripción')
@@ -527,13 +530,15 @@ class PTD:
         tables = investigación.find_elements(By.CLASS_NAME, 'table-responsive')
         x = tables[0]
         
-        self.Actividades_de_investigación = pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+        self.Actividades_de_investigación = (pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+                                             ).fillna('')
         #Actividades_de_investigación
         
         self.Actividades_de_investigación = fix_column(x,self.Actividades_de_investigación,'Actividad')
         
         x = tables[1]
-        self.Actividades_relacionadas_con_la_investigación = pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+        self.Actividades_relacionadas_con_la_investigación = (pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+                                                              ).fillna('')
         
         #self.Actividades_relacionadas_con_la_investigación = fix_column(tables[0],self.Actividades_relacionadas_con_la_investigación,'Actividad')
         self.Actividades_relacionadas_con_la_investigación = fix_column(x,self.Actividades_relacionadas_con_la_investigación,'Descripción')
@@ -550,11 +555,13 @@ class PTD:
         extensión = hell.get_driver()
         tables = extensión.find_elements(By.CLASS_NAME, 'table-responsive')
         x = tables[0]
-        self.Actividades_de_extensión = pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+        self.Actividades_de_extensión = (pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+                                         ).fillna('')
         #Actividades_de_extensión
         
         x = tables[1]
-        self.Actividades_relacionadas_con_la_extensión = pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+        self.Actividades_relacionadas_con_la_extensión = (pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+                                                         ).fillna('')
         
         self.Actividades_relacionadas_con_la_extensión = fix_column(x,self.Actividades_relacionadas_con_la_extensión,'Descripción')
         
@@ -571,7 +578,8 @@ class PTD:
         administración = hell.get_driver()
         tables = administración.find_elements(By.CLASS_NAME, 'table-responsive')
         x = tables[0]
-        self.Actividades_de_administración = pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+        self.Actividades_de_administración = (pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+                                              ).fillna('')
         
         self.Actividades_de_administración = fix_column(x,self.Actividades_de_administración,'Descripción')
         
@@ -587,7 +595,8 @@ class PTD:
         otras = hell.get_driver()
         tables = otras.find_elements(By.CLASS_NAME, 'table-responsive')
         x = tables[0]
-        self.Otras_Actividades = pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+        self.Otras_Actividades = (pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
+                                  ).fillna('')
         
         self.Otras_Actividades = fix_column(x,self.Otras_Actividades,'Descripción')
 
@@ -776,8 +785,6 @@ class PTD:
 
         return i, lptd
 
-    def hola(self):
-        pass
     
     def loop(self,i,lptd,
              file = 'kk.json'):
@@ -913,17 +920,14 @@ class PTD:
             print(f'recovering loop try {j}/{jmax}')
             try:
                 #input('Check recovering loop')
-                print('check CONTINUAR')
                 if hell.Text('CONTINUAR').exists():
                     print('close CONTINUAR popup')
                     hell.click('CONTINUAR')
                 sleep(2)
-                print('check Aceptar')
                 if hell.Text('Aceptar').exists():
                     print('close Aceptar popup')
                     hell.click('Aceptar')
                 sleep(2)
-                print('check volver')
                 if hell.Text('Volver').exists():
                     print('Return back to records list')
                     hell.click('Volver')
