@@ -19,7 +19,7 @@ from ipywidgets import widgets
 def radio(description,options=[True, False]):
     w = widgets.RadioButtons(
         options=options,
-    #    layout={'width': 'max-content'}, # If the items' names are long
+    #    layout={'width': 'max-content'}, # If the self.items' names are long
         description=description,
         disabled=False
     )
@@ -231,7 +231,11 @@ class PTD:
     WARNINGS = []
     NEXT_STEP = True
     BREAK = False
-    
+    PRESENCIAL = 5
+    i = 0
+    i_max = 10000
+    i_page_max = 1000
+    i_page = 1
     def __init__(self,settings={}): #with previous commands
         self.SAVE_DATABASE = settings.get('Salvar la base de datos')
         self.UPDATE_DATABASE = settings.get('Actualizar la base de datos')
@@ -348,24 +352,24 @@ class PTD:
                 sleep(2)
                 hell.wait_until( hell.Text('Fecha inicio semestre').exists,timeout_secs=240 )
         
-    def get_docente(self,i_docente=0,L=[]):
-        print(f'page: {self.i_page}; i: {i_docente} ')
+    def get_docente(self,L=[]):
+        print(f'page: {self.i_page}; i: {self.i} ')
         ALL = hell.get_driver()
         try:
             #**************  GET docente info → TODO: move to a function *******
             hell.wait_until( hell.Text('Fecha inicio semestre').exists,timeout_secs=240 )
             tables = ALL.find_elements(By.CLASS_NAME, 'table-responsive')
-            x = tables[i_docente] # Si no hay más docentes en página ésta linea genera Error
+            x = tables[self.i] # Si no hay más docentes en página ésta linea genera Error
             #******************************************************************
             if self.i_page == 1:
                 self.n_page = len(tables) # The same for all pages. Fix the Default value
-        except:
+        except: # jump to next page and reset i
             print('Try to jump to next page...'.ljust(80),end='\r')
             print(f'Wait 2 seconds...'.ljust(80),end='\r')
             sleep(2)
             if not ALL.find_elements(By.TAG_NAME, "li")[0].get_attribute('innerHTML').find("pagination-next ng-scope disabled") > -1:
                 self.i_page += 1
-                i_docente = 0
+                self.i = 0
                 print(f"page: {self.i_page}".ljust(80),end='\r')
                 hell.click("Siguiente")
                 print(f'Wait 2 seconds...'.ljust(80),end='\r')
@@ -381,7 +385,7 @@ class PTD:
                 hell.wait_until( hell.Text('Fecha inicio semestre').exists,timeout_secs=240 )
                 ALL = hell.get_driver()
                 tables = ALL.find_elements(By.CLASS_NAME, 'table-responsive')
-                x = tables[i_docente] # Si no hay más docentes en página ésta linea genera Error
+                x = tables[self.i] # Si no hay más docentes en página ésta linea genera Error
                 #******************************************************************                            
             else:
                 raise Exception("Saliendo: Todos los docentes encontrados")            
@@ -400,9 +404,9 @@ class PTD:
         if self.diligenciado.Docente.iloc[0].split(' - ')[0] in [
             d['información_general']['identificación'] for d in L]:
             print('Already in database')
-            i_docente += 1 
+            self.i += 1 
             self.CONTINUE = True
-            return i_docente
+            return None
     
         # Va al primer docente
         print('wait 5 seconds...'.ljust(80),end='\r')
@@ -420,11 +424,11 @@ class PTD:
         docentes = [ x for x in  ALL.find_elements(By.TAG_NAME, 'a') if find_element(x,By.TAG_NAME,'img') and x.find_element(By.TAG_NAME,'img').get_attribute('title')== 'Ver plan']
 
         
-        docentes[i_docente].click()
+        docentes[self.i].click()
 
         # TODO: Change for a hell.wait_until with time
-        print('wait 1+10 seconds...'.ljust(80),end='\r')
-        sleep(1)
+        print('wait 2 + until 10 seconds...'.ljust(80),end='\r')
+        sleep(2)
 
         try:
             hell.wait_until(hell.Text('Resumen de cambios').exists, timeout_secs=10 )
@@ -436,7 +440,7 @@ class PTD:
         
         hell.wait_until(hell.Text('Horas diligenciadas').exists, timeout_secs=self.timeout )
 
-        return i_docente
+        return None
 
     def get_horas_reportadas(self):
         print('wait 2 seconds...'.ljust(80),end='\r')
@@ -502,9 +506,11 @@ class PTD:
         self.Actividades_de_docencia = (pd.read_html( io.StringIO( x.get_attribute('innerHTML') ) )[0]
                                         ).fillna('')
         #Actividades_de_docencia
-        
-        presencial = 5
-        if self.Actividades_de_docencia['Número de alumnos'].max() <= 5:
+        for k in ['Número de horas', 'Número de alumnos', 'Horas planeadas']:
+            self.Actividades_de_docencia[k] = self.Actividades_de_docencia[k].apply(lambda x: int(x) if x else 0)
+
+        # TODO → Move WARNINGs to methods
+        if self.Actividades_de_docencia['Número de alumnos'].max() <= self.PRESENCIAL:
             self.WARNINGS.append('Actividades de Docencia: Debe tener al menos un curso presencial a su cargo')
             
         x = tables[1]
@@ -761,12 +767,12 @@ class PTD:
         #return self.i_max, self.i_page_max
 
 
-    def initialize_loop(self, lptd):
+    def initialize_loop(self,lptd):
         #TODO: i self.i
         if self.RESET_i:
-            i=0
+            self.i=0
         else:
-            i = len(lptd)-(self.i_page-1)*self.n_page # For new data append to old database
+            self.i = len(lptd)-(self.i_page-1)*self.n_page # For new data append to old database
         
         
         self.go_to_initial_page() #TODO: Define self.i_page here from guess_page
@@ -783,20 +789,22 @@ class PTD:
         print('')
         print(f'{self.n_total} registros: en {self.i_page_max} páginas; e índice máximo {self.i_max}')
 
-        return i, lptd
-
     
-    def loop(self,i,lptd,
+    def loop(self,lptd,
              file = 'kk.json'):
-    #if True:
-        print(f'input i {i}'.ljust(80),end='\r')
+        '''
+        It is assumed that you are in the result page
+        with an initial self.i and and initial self.i_page
+        '''
+        #if True:
+        print(f'input i {self.i}'.ljust(80),end='\r')
         
         while True:
         #if True:
             #if i == self.i_max and self.i_page == self.i_page_max:
             #    input('In last element ... ')
 
-            if i == self.i_max+1 and self.i_page == self.i_page_max:
+            if self.i == self.i_max+1 and self.i_page == self.i_page_max:
                 self.BREAK = True
                 print('All records analysed: forcing break ..., bye!')
                 raise  Exception('The end')
@@ -804,10 +812,11 @@ class PTD:
             self.DEVOLVER = []
             self.WARNINGS = []
             self.NEXT_STEP = True
-            
-            i = self.get_docente(i_docente=i,L=lptd) #CONTINUE(i_docente) inside
+
+            # Requires "Volver"
+            self.get_docente(L=lptd) #CONTINUE(i_docente) inside
             if self.CONTINUE:
-                print(f'CONTINUE {i}'.ljust(80),end='\r')
+                print(f'CONTINUE {self.i}'.ljust(80),end='\r')
                 continue
     
             print('wait 3 seconds...'.ljust(80),end='\r')
@@ -855,7 +864,7 @@ class PTD:
                     hell.click('CONTINUAR')
                         
             else:
-                i = CONTINUE(i)
+                self.i = CONTINUE(self.i)
         
             DEVOLVER = self.append_DEVOLVER() # Data scheme used here!
         
@@ -870,7 +879,7 @@ class PTD:
                 sleep(3)
                 hell.click('Aceptar')
                 print('Devuelto\n','\n'.join(self.DEVOLVER))
-                i = CONTINUE(i)
+                self.i = CONTINUE(self.i)
         
             # TODO → Move to self.method(lptd)
             elif self.ENVIAR:
@@ -897,7 +906,7 @@ class PTD:
                 json.dump(lptd,f)
                 f.close()
     
-            if i == self.i_max and self.i_page == self.i_page_max:
+            if self.i == self.i_max and self.i_page == self.i_page_max:
                 print('*'*40)
                 print('¡Todos los registros han sido procesados!\nUn ERROR se generá para escapar del loop')
                 print('*'*40)                
@@ -906,14 +915,14 @@ class PTD:
             print('Next docente...'.ljust(80),end='\r')
             #raise Exception('C')
             
-            i = CONTINUE(i)
+            self.i = CONTINUE(self.i)
             
-        return i, lptd
+        return lptd
 
-    def force_loops(self, i,lptd, file):
+    def force_loops(self, lptd, file):
         ptd = self
-        jmax = 5
-        for j in range(5):
+        jmax = 10
+        for j in range(jmax):
             if self.BREAK:
                 print('The End')
                 break
@@ -932,30 +941,30 @@ class PTD:
                     print('Return back to records list')
                     hell.click('Volver')
                 
-                print('try loop')
-                i,lptd = ptd.loop(i,lptd, file) #When fails to to except
-                print('end try loop')
+                print('try 1 loop i',self.i)
+                lptd = ptd.loop(lptd, file) #When fails to to except
 
             except:
                 print('except')
+                #********* TODO: Remove *********************
                 #if hell.Text('Fecha inicio periodo').exists():
+                sleep(2)                    
+                if hell.Text('Aceptar').exists():
+                    print('close Aceptar popup')
+                    hell.click('Aceptar')                
                 sleep(2)
                 if hell.Text('CONTINUAR').exists():
                     print('close CONTINUAR popup')
                     hell.click('CONTINUAR')
-                sleep(2)                    
-                if hell.Text('Aceptar').exists():
-                    print('close Aceptar popup')
-                    hell.click('Aceptar')
-                sleep(2)
                 if hell.Text('Volver').exists():
                     print('Return back to records list')
                     hell.click('Volver')
+                #**********************************************
                 print('Returning back to list') # hell.Text("Gestión de planes de trabajo").exists() → True
                 hell.wait_until(hell.Text("Gestión de planes de trabajo").exists,timeout_secs=ptd.timeout) 
-                i = 0
+                #self.i = 0 # TODO. Maybe can be commented
                 #raise Exception('Check logout')
                 if hell.get_driver().current_url != self.url:
                     print('`Kernel` → `Restart Kernel` and `Run` → `Run All Cells` again')
                     break
-        return i,lptd
+        return lptd
