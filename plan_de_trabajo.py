@@ -706,7 +706,13 @@ class PTD:
 
     def append_DEVOLVER(self):
         '''
-        El esquema de datos debe permitir todos los análisis
+        El esquema de datos debe permitir todos los análisis. 
+        Análisis implementados:
+        1. Horas reportadas y horas a completar no coinciden
+        2. Cursos con cero horas o cero alumnos no pueden tener horas planeadas
+        3. Proyectos de Invesigación deben tener código SIIU
+        4. "Actividades de apoyo a la gestión académica-administrativa" o reuniones por 45 horas
+        5. Es oblogatorio incluir horas en "Atención a estudiantes" 
         '''
         DEVOLVER = False
         if self.resumen_horas['h_total'] and self.resumen_horas['h_total'] != self.resumen_horas['horas_acompletar']:
@@ -719,7 +725,7 @@ class PTD:
 
         L = self.Actividades_de_investigación['Código'].to_list()
         if not self.Actividades_de_investigación.empty and not L:
-            self.DEVOLVER.append('"Actividades de investigación": Los proyectos deben tener código SIU. Mover a "Actividades relacionadas con la investigación" con compromiso explícito')
+            self.DEVOLVER.append('"Actividades de investigación": Los proyectos deben tener código SIIU. Mover a "Actividades relacionadas con la investigación" con compromiso explícito')
 
         reuniones = self.Otras_Actividades[self.Otras_Actividades['Actividad'] == 'Actividades de apoyo a la gestión académica-administrativa']
         if reuniones.empty:
