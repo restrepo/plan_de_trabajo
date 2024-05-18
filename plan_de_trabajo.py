@@ -104,15 +104,6 @@ def get_compromisos(entregables,df):
     return list( entregables.intersection( ' '.join(((df.Actividad + df.Descripción
              ).apply(unidecode).to_list())).split()) )
 
-def CONTINUE(i):
-    #hell.get_driver().back()
-    print('wait 2 seconds...'.ljust(80),end='\r')
-    sleep(2)
-    hell.wait_until( hell.Text("Volver").exists,timeout_secs=120 )
-    hell.click("Volver")
-    hell.wait_until( hell.Text('Fecha inicio semestre').exists,timeout_secs=240 )
-    return i+1
-
 def  get_semester():
     from datetime import datetime
     semester = 1
@@ -245,6 +236,10 @@ class PTD:
         self.RESET_i = settings.get('RESET i: ignorando la base de datos')
         self.ESTADO = settings.get('Estado del plan de trabajo')
         self.SEMESTRE = settings.get('Semestre')
+        self.autorizar_aprobar = 'Autorizar'
+        if self.ENVIAR and self.ESTADO == 'Autorizado':
+            self.autorizar_aprobar = 'Aprobar'
+            
         
     def initialize_database(self,file):
         if not file:
@@ -310,7 +305,7 @@ class PTD:
                 break
         
         if not instituto:
-            print('ERROR: Insituto no encontrado')
+            print('Usuario es Decano')
             #break
         
         sleep(1)
@@ -701,7 +696,7 @@ class PTD:
         if compromisos or compromisos2:
             if msg:
                 conector='\n'
-            msg  = msg+conector+'Subir entregables de compromisos al formulario: https://forms.gle/MKDwMRuvTmVwhADV8, durante el mes siguiente a la terminación del semestre'
+            msg  = msg+conector+'Subir entregables de compromisos al formulario: https://forms.gle/EjgHCmXdMR6SbtqT6, durante el mes siguiente a la terminación del semestre'
         return msg
 
     def append_DEVOLVER(self):
@@ -714,7 +709,7 @@ class PTD:
         4. "Actividades de apoyo a la gestión académica-administrativa" o reuniones por 45 horas
         5. Es oblogatorio incluir horas en "Atención a estudiantes" 
         '''
-        DEVOLVER = False
+        #DEVOLVER = False
         if self.resumen_horas['h_total'] and self.resumen_horas['h_total'] != self.resumen_horas['horas_acompletar']:
             self.DEVOLVER.append(f'Horas reportadas: {self.msg_h_acompletar}')
         
@@ -743,9 +738,9 @@ class PTD:
 
         #Check if id is in `devolver_semester.json`
             
-        if self.DEVOLVER:
-            DEVOLVER = True
-        return DEVOLVER
+        #if self.DEVOLVER:
+        #    DEVOLVER = True
+        #return DEVOLVER
 
     def get_docentes_by_identificación(self,L):
         self.docentes = dict( [(d['información_general']['identificación'], d['información_general']['Docente']) for d in L])
@@ -795,12 +790,23 @@ class PTD:
         print('')
         print(f'{self.n_total} registros: en {self.i_page_max} páginas; e índice máximo {self.i_max}')
 
+    def Volver(self):
+        '''
+        Return back to list. 
+        '''
+        #hell.get_driver().back()
+        print('wait 2 seconds...'.ljust(80),end='\r')
+        sleep(2)
+        hell.wait_until( hell.Text("Volver").exists,timeout_secs=120 )
+        hell.click("Volver")
+        hell.wait_until( hell.Text('Fecha inicio semestre').exists,timeout_secs=240 )
+    
     
     def loop(self,lptd,
              file = 'kk.json'):
         '''
         It is assumed that you are in the result page
-        with an initial self.i and and initial self.i_page
+        with an initial self.i and and init{self.ESTADO}ial self.i_page
         '''
         #if True:
         print(f'input i {self.i}'.ljust(80),end='\r')
@@ -809,7 +815,14 @@ class PTD:
         #if True:
             #if i == self.i_max and self.i_page == self.i_page_max:
             #    input('In last element ... ')
-
+            if hell.Text('CONTINUAR').exists():
+                hell.click('CONTINUAR')
+            if hell.Text('Aceptar').exists():    
+                print('Click "Aceptar"')
+                hell.click('Aceptar')
+            
+            print(f"new i → {self.i}")
+            
             if self.i == self.i_max+1 and self.i_page == self.i_page_max:
                 self.BREAK = True
                 print('All records analysed: forcing break ..., bye!')
@@ -820,7 +833,7 @@ class PTD:
             self.NEXT_STEP = True
 
             # Requires "Volver"
-            self.get_docente(L=lptd) #CONTINUE(i_docente) inside
+            self.get_docente(L=lptd) # → self.i += 1
             if self.CONTINUE:
                 print(f'CONTINUE {self.i}'.ljust(80),end='\r')
                 continue
@@ -870,13 +883,18 @@ class PTD:
                     hell.click('CONTINUAR')
                         
             else:
-                self.i = CONTINUE(self.i)
+                raise Exception('Cannot get into docente')
+                #self.Volver()
+                # self.i += 1
+
         
-            DEVOLVER = self.append_DEVOLVER() # Data scheme used here!
+            #DEVOLVER = 
+            self.append_DEVOLVER() # Data scheme used here!
         
             # TODO → Move to self.method(lptd)
             msg_autorizar = self.get_mensaje_autorizar() #Required by self.to_dict()
             if self.ENVIAR and self.DEVOLVER:
+                self.ESTADO = 'Devuelto para revisión'
                 msg = '\n'.join(self.DEVOLVER)
                 hell.click('Devolver')
                 hell.write(msg, into = 'MOTIVO')
@@ -885,23 +903,31 @@ class PTD:
                 sleep(3)
                 hell.click('Aceptar')
                 print('Devuelto\n','\n'.join(self.DEVOLVER))
-                self.i = CONTINUE(self.i)
+                #self.Volver() # → self.i += 1
         
             # TODO → Move to self.method(lptd)
             elif self.ENVIAR:
-                hell.click('Autorizar')
+                self.ESTADO = 'Autorizado'
+                if self.autorizar_aprobar == 'Aprobar':
+                    self.ESTADO = 'Aprobado'
+                
+                hell.click(self.autorizar_aprobar)
                 hell.write(msg_autorizar, into = 'Observaciones')
                 hell.click('Aceptar')
-                hell.wait_until( hell.Text('El plan ha sido actualizado exitosámente y ha quedado en estado Autorizado.').exists,timeout_secs=120 )
-                sleep(3)
+                print(f'Esperando el pop up de {self.ESTADO}')
+                print('wait 3 seconds...'.ljust(80),end='\r')
+                sleep(3)                
+                hell.wait_until( hell.Text(f'El plan ha sido actualizado exitosámente y ha quedado en estado {self.ESTADO}').exists,timeout_secs=self.timeout )
+                #sleep(1)
+                print('Click "Aceptar"')
                 hell.click('Aceptar')
-                print('Autorizar\n',msg_autorizar)
+                print(f'{self.autorizar_aprobar}\n',msg_autorizar)
                 #input('Desapareció pup up? (Hit <Enter>)')
-                self.ESTADO = 'Autorizado'
-                lptd = self.add_to_list(lptd)
-                #lself.append( deepcopy(self.to_dict()) )
-            else:            
-                lptd = self.add_to_list(lptd)
+
+            lptd = self.add_to_list(lptd)
+            #lself.append( deepcopy(self.to_dict()) )
+            #else:            
+            #    lptd = self.add_to_list(lptd)
                 #lself.append( deepcopy(self.to_dict()) )
             
             print(f'aprobados: {len(lptd)}'.ljust(80),end='\r')
@@ -921,7 +947,8 @@ class PTD:
             print('Next docente...'.ljust(80),end='\r')
             #raise Exception('C')
             
-            self.i = CONTINUE(self.i)
+            self.Volver()
+            self.i += 1
             
         return lptd
 
