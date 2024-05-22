@@ -164,7 +164,11 @@ def login():
     hell.write(usuario,into='*Usuario')
     hell.write(contraseña,into='*Contraseña')
     
-    hell.click("I'm not a robot")
+    try:
+        hell.click("I'm not a robot")
+    except:
+        hell.click("No soy un robot")
+        
     print('wait fo 2 seconds'.ljust(80),end='\r')
     sleep(2)
     try:
@@ -199,14 +203,14 @@ def configuration(radios,drops):
 #hell is global
 class PTD:
     '''
-    Caracterśiticas:
-    * Número de horas diligenciadas
-    * Cursos con 0 horas
-    * Código SIU de proyectos
-    * Actividades de apoyo a la gestión académica-administrativa con 45 horas
-    * Comprueba si hay compromisos y pide entregables a través de un formulario
-      a través de un formulario de Google durante el mes siguiente la finalización
-      del semestre
+    El plan de trabajo es devuelto sí
+    1. Horas reportadas y horas a completar no coinciden
+    2. Cursos con cero horas o cero alumnos no pueden tener horas planeadas
+    3. Proyectos de Investigación deben tener código SIIU
+    4. "Actividades de apoyo a la gestión académica-administrativa" o reuniones por 45 horas
+    5. Es oblogatorio incluir horas en "Atención a estudiantes"
+    
+    Sí se detecta algún compromiso el Plan de Trabajo es autorizado con un link para subir entregables.    
     '''
     #Global variables
     timeout = 180 #secs
@@ -276,7 +280,7 @@ class PTD:
         if not hell.Text('Gestionar planes').exists():
             self.NEXT_STEP = False
         
-    def gestionar_planes(self,institutos = ['BIOLOGIA','FISICA','MATEMATICA','QUIMICA', 'CIENCIAS DEL MAR'],SINGLE = False, cedula = None):
+    def gestionar_planes(self,institutos = ['BIOLOGIA','FISICA','MATEMATICAS','QUIMICA', 'CIENCIAS DEL MAR'],SINGLE = False, cedula = None):
         """
         Make the search
         """
@@ -298,7 +302,10 @@ class PTD:
         hell.wait_until( hell.TextField("Facultad Ciencias Exactas y Naturales").exists,timeout_secs=self.timeout )
         
         for I in institutos:
-            x = f"INSTITUTO DE {I}"
+            tipo_instituto = 'INSTITUTO'
+            if I == 'MATEMATICAS':
+                tipo_instituto = 'DEPARTAMENTO'
+            x = f"{tipo_instituto} DE {I}"
             instituto = None
             if hell.TextField(x).exists():
                 instituto = x
