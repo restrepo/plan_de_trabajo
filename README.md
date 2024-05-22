@@ -7,7 +7,7 @@
 
   ![image](https://raw.githubusercontent.com/restrepo/plan_de_trabajo/main/img/Av30W.png)
   
-4. Download and install Anaconda from [here](https://www.anaconda.com/download/success), and from the "Anaconda Navigation" window, choose "JupyterLab":
+4. Download and install Anaconda from [here](https://www.anaconda.com/download/success), and from the "Anaconda Navigation" window, launch "JupyterLab":
    
 ![image](https://github.com/restrepo/plan_de_trabajo/assets/655883/860c34b0-4052-43a7-82f9-0d577cc3c528)
 
