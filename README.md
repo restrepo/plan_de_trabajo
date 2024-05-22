@@ -1,5 +1,5 @@
 ## Installation
-1. Donload this `notebook` by following [this link](https://raw.githubusercontent.com/restrepo/plan_de_trabajo/main/ptd.ipynb)
+1. Donload [this Jupyter `notebook`](https://github.com/restrepo/plan_de_trabajo/blob/main/ptd.ipynb) by following [this link](https://raw.githubusercontent.com/restrepo/plan_de_trabajo/main/ptd.ipynb)
 
 2. Save with: <kbd>Ctrl</kbd>+<kbd>S</kbd>
 
@@ -16,3 +16,4 @@
 ## Usage
 <!--1. Use <kbd>Shift</kbd>+<kbd>Enter</kbd> to execute each cell, sequantially, below -->
 From the menu: `Kernel` → `Restart Kernel` and `Run` → `Run All Cells`
+
