@@ -11,9 +11,7 @@
    
 ![image](https://github.com/restrepo/plan_de_trabajo/assets/655883/860c34b0-4052-43a7-82f9-0d577cc3c528)
 
-5. Now navigate to the directory where `noebook` is downloaded in "JupyterLab"  and open it.
-
-  [1]: https://i.stack.imgur.com/Av30W.png
+5. Now navigate to the directory where the `notebook` is downloaded from the `File Browser` of "JupyterLab"  and open it.
 
 ## Usage
 <!--1. Use <kbd>Shift</kbd>+<kbd>Enter</kbd> to execute each cell, sequantially, below -->
