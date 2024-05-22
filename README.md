@@ -7,9 +7,14 @@
 
   ![image](https://raw.githubusercontent.com/restrepo/plan_de_trabajo/main/img/Av30W.png)
   
-5. Download and install Anaconda from [here](https://www.anaconda.com/download/success), and from the "Anaconda Navigation" window choose "jupyter notebook":
+4. Download and install Anaconda from [here](https://www.anaconda.com/download/success), and from the "Anaconda Navigation" window, choose "JupyterLab":
    
-![image](https://github.com/restrepo/plan_de_trabajo/assets/655883/290b9213-428a-46f9-9083-f0731f872993)
+![image](https://github.com/restrepo/plan_de_trabajo/assets/655883/860c34b0-4052-43a7-82f9-0d577cc3c528)
 
-4. Now navigate to the directory where `notebook` is downloaded in "jupyter Notebook"  and open it.
+5. Now navigate to the directory where `noebook` is downloaded in "JupyterLab"  and open it.
 
+  [1]: https://i.stack.imgur.com/Av30W.png
+
+## Usage
+<!--1. Use <kbd>Shift</kbd>+<kbd>Enter</kbd> to execute each cell, sequantially, below -->
+From the menu: `Kernel` → `Restart Kernel` and `Run` → `Run All Cells`
